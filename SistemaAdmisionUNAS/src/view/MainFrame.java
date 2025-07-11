@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Ventana principal del Sistema de Admisión UNHEVAL
+ * Ventana principal del Sistema de Admisión UNAS
  * Versión completa con todos los paneles
  * @author joe-696
  */
@@ -12,7 +12,11 @@ public class MainFrame extends JFrame {
     
     private JTabbedPane tabbedPane;
     private InscripcionPanel inscripcionPanel;
-    private RegistroPanel registroPanel;
+    private Re    private void mostrarMensajeBienvenida() {
+        String mensaje = """
+            🎉 ¡Bienvenido al Sistema de Admisión UNAS!
+            
+            ✅ Sistema iniciado correctamenteoPanel registroPanel;
     private ResultadosPanel resultadosPanel;
     
     public MainFrame() {
@@ -21,7 +25,7 @@ public class MainFrame extends JFrame {
     }
     
     private void initComponents() {
-        setTitle("🎓 Sistema de Admisión UNHEVAL - v1.0");
+        setTitle("🎓 Sistema de Admisión UNAS - v1.0");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         
@@ -304,12 +308,12 @@ public class MainFrame extends JFrame {
     
     private void mostrarAcercaDe() {
         String mensaje = """
-            🎓 Sistema de Admisión UNHEVAL
+            🎓 Sistema de Admisión UNAS
             
             📋 Versión: 1.0.0
             👨‍💻 Desarrollador: joe-696
             📚 Curso: Estructura de Datos y Algoritmos
-            🏛️ Universidad: UNHEVAL
+            🏛️ Universidad: UNAS
             📅 Fecha: Junio 2025
             
             🔧 Tecnologías Utilizadas:
@@ -349,7 +353,7 @@ public class MainFrame extends JFrame {
             """;
         
         JOptionPane.showMessageDialog(this, mensaje, 
-            "🎓 Sistema de Admisión UNHEVAL",
+            "🎓 Sistema de Admisión UNAS",
             JOptionPane.INFORMATION_MESSAGE);
     }
     

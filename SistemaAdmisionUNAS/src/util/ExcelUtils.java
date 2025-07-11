@@ -73,7 +73,7 @@ public class ExcelUtils {
         
         List<Postulante> postulantes = new ArrayList<>();
         
-        // Datos de carreras más demandadas en UNHEVAL
+        // Datos de carreras más demandadas en UNAS
         String[] carrerasPopulares = {
             "INGENIERÍA DE SISTEMAS E INFORMÁTICA",
             "MEDICINA HUMANA", 

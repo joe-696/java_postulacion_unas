@@ -5,7 +5,7 @@ import dao.PostulanteDAO;
 import java.util.*;
 
 /**
- * Algoritmo de procesamiento de admisión UNHEVAL
+ * Algoritmo de procesamiento de admisión UNAS
  * @author joe-696
  */
 public class AlgoritmoAdmision {

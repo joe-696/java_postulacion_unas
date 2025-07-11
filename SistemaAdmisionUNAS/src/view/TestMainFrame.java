@@ -10,8 +10,8 @@ import javax.swing.SwingUtilities;
 public class TestMainFrame {
     
     public static void main(String[] args) {
-        System.out.println("🖥️ INICIANDO SISTEMA DE ADMISIÓN UNHEVAL");
-        System.out.println("=========================================");
+        System.out.println("🖥️ INICIANDO SISTEMA DE ADMISIÓN UNAS");
+        System.out.println("=====================================");
         
         // Configurar propiedades del sistema
         System.setProperty("swing.defaultlaf", "javax.swing.plaf.nimbus.NimbusLookAndFeel");

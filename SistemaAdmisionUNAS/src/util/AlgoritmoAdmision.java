@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * ALGORITMO PRINCIPAL DE ADMISIÓN UNHEVAL
+ * ALGORITMO PRINCIPAL DE ADMISIÓN UNAS
  * Implementa todas las reglas del proceso de admisión
  * @author joe-696
  */
@@ -26,9 +26,9 @@ public class AlgoritmoAdmision {
     /**
      * ALGORITMO PRINCIPAL - PROCESA TODO EL SISTEMA DE ADMISIÓN
      */
-    public ResultadoAdmision procesarAdmision(List<Postulante> postulantes) {
-        System.out.println("\n🎯 INICIANDO ALGORITMO DE ADMISIÓN UNHEVAL");
-        System.out.println("==========================================");
+    public ResultadoAdmision procesarAdmision(List<Postulante> postulantes) {        
+        System.out.println("\n🎯 INICIANDO ALGORITMO DE ADMISIÓN UNAS");
+        System.out.println("=====================================");
         
         this.postulantes = new ArrayList<>(postulantes);
         

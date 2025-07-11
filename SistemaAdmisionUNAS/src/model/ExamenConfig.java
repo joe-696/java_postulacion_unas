@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Date;
 
 /**
- * Configuración del Examen de Admisión UNHEVAL
+ * Configuración del Examen de Admisión UNAS
  * @author joe-696
  */
 public class ExamenConfig {
@@ -23,7 +23,7 @@ public class ExamenConfig {
      * Constructor vacío con configuración por defecto
      */
     public ExamenConfig() {
-        this.nombre = "EXAMEN ADMISIÓN UNHEVAL 2025";
+        this.nombre = "EXAMEN ADMISIÓN UNAS 2025";
         this.numeroAsignaturas = 10;
         this.tiposExamen = 3;
         this.puntajeMinimo = 11.0;

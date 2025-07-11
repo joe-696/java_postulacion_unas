@@ -422,7 +422,7 @@ public class AdministracionPanel extends JPanel {
     }
     
     private void cargarCarrerasExistentes() {
-        // Carreras predefinidas según UNHEVAL
+        // Carreras predefinidas según UNAS
         String[][] carrerasIniciales = {
             {"INGENIERÍA DE SISTEMAS E INFORMÁTICA", "30", "INGENIERIA", "2.0"},
             {"INGENIERÍA CIVIL", "25", "INGENIERIA", "2.0"},

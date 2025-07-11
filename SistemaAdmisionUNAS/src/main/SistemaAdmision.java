@@ -8,14 +8,14 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Sistema de Admisión UNHEVAL - Versión completa con modelos
+ * Sistema de Admisión UNAS - Versión completa con modelos
  * @author joe-696
  */
 public class SistemaAdmision {
 
     public static void main(String[] args) {
         System.out.println("╔══════════════════════════════════════╗");
-        System.out.println("║    SISTEMA DE ADMISIÓN UNHEVAL       ║");
+        System.out.println("║    SISTEMA DE ADMISIÓN UNAS          ║");
         System.out.println("║        📚 MODELOS COMPLETOS 📚       ║");
         System.out.println("╚══════════════════════════════════════╝");
         System.out.println();
@@ -120,7 +120,7 @@ public class SistemaAdmision {
         System.out.println("===================================");
         
         ExamenConfig examen = new ExamenConfig();
-        examen.setNombre("EXAMEN ADMISIÓN UNHEVAL 2025-I");
+        examen.setNombre("EXAMEN ADMISIÓN UNAS 2025-I");
         examen.setFechaExamen(new Date());
         
         System.out.println("✅ " + examen);

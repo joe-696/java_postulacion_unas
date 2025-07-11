@@ -1,12 +1,12 @@
-package main;
-
-import model.Postulante;
+package main;    public static void main(String[] args) {
+        System.out.println("🎓 SISTEMA COMPLETO DE ADMISIÓN UNAS");
+        System.out.println("====================================");import model.Postulante;
 import util.ExcelUtils;
 import util.AlgoritmoAdmision;
 import java.util.List;
 
 /**
- * Prueba completa del Sistema de Admisión UNHEVAL
+ * Prueba completa del Sistema de Admisión UNAS
  * Demuestra la importación de datos y el algoritmo de admisión
  * @author joe-696
  */

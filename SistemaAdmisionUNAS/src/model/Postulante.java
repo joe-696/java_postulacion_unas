@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.text.SimpleDateFormat;
 
 /**
- * Clase modelo Postulante para el Sistema de Admisión UNHEVAL
+ * Clase modelo Postulante para el Sistema de Admisión UNAS
  * Representa la estructura de datos del Excel de postulantes
  * 
  * @author joe-696
