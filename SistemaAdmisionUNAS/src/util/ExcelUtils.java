@@ -58,16 +58,61 @@ public class ExcelUtils {
     
     /**
      * Importar postulantes desde archivo Excel/CSV con formato específico UNAS
+     * Soporta archivos .xlsx, .xls, .csv y .txt
      */
     public static List<Postulante> importarPostulantesDesdeExcel(String rutaArchivo) {
         List<Postulante> postulantes = new ArrayList<>();
         
-        try (BufferedReader reader = new BufferedReader(new FileReader(rutaArchivo))) {
+        try {
+            System.out.println("📥 Importando postulantes desde: " + rutaArchivo);
+            
+            // Determinar tipo de archivo
+            String extension = obtenerExtension(rutaArchivo).toLowerCase();
+            
+            switch (extension) {
+                case "csv":
+                case "txt":
+                    postulantes = importarDesdeCSV(rutaArchivo);
+                    break;
+                case "xlsx":
+                case "xls":
+                    // Para Excel real necesitarías Apache POI, por ahora usamos CSV
+                    JOptionPane.showMessageDialog(null,
+                        "⚠️ Para archivos Excel (.xlsx/.xls):\n\n" +
+                        "1. Abra el archivo en Excel\n" +
+                        "2. Guárdelo como CSV (separado por comas)\n" +
+                        "3. Seleccione el archivo CSV guardado\n\n" +
+                        "Esto asegura compatibilidad total.",
+                        "Formato Excel",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    return postulantes;
+                default:
+                    throw new IllegalArgumentException("Formato no soportado: " + extension);
+            }
+            
+            System.out.println("✅ Importación completada: " + postulantes.size() + " postulantes");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error importando archivo: " + e.getMessage());
+            JOptionPane.showMessageDialog(null,
+                "❌ Error importando archivo:\n" + e.getMessage(),
+                "Error de Importación",
+                JOptionPane.ERROR_MESSAGE);
+        }
+        
+        return postulantes;
+    }
+    
+    /**
+     * Importar desde archivo CSV/TXT
+     */
+    private static List<Postulante> importarDesdeCSV(String rutaArchivo) throws IOException {
+        List<Postulante> postulantes = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(rutaArchivo, java.nio.charset.StandardCharsets.UTF_8))) {
             String linea;
             boolean esPrimeraLinea = true;
             int lineaNumero = 0;
-            
-            System.out.println("📥 Importando postulantes desde: " + rutaArchivo);
             
             while ((linea = reader.readLine()) != null) {
                 lineaNumero++;
@@ -75,6 +120,11 @@ public class ExcelUtils {
                 // Saltar encabezados
                 if (esPrimeraLinea) {
                     esPrimeraLinea = false;
+                    continue;
+                }
+                
+                // Saltar líneas vacías
+                if (linea.trim().isEmpty()) {
                     continue;
                 }
                 
@@ -87,67 +137,79 @@ public class ExcelUtils {
                     System.err.println("❌ Error en línea " + lineaNumero + ": " + e.getMessage());
                 }
             }
-            
-            System.out.println("✅ Importación completada: " + postulantes.size() + " postulantes");
-            
-            // Notificar evento de importación
-            EventBus.getInstance().publicarPostulantesImportados(postulantes.size());
-            
-        } catch (IOException e) {
-            System.err.println("❌ Error leyendo archivo: " + e.getMessage());
         }
         
         return postulantes;
     }
     
     /**
-     * Parsear una línea del Excel según el formato UNAS
+     * Obtener extensión de archivo
+     */
+    private static String obtenerExtension(String rutaArchivo) {
+        int lastDot = rutaArchivo.lastIndexOf('.');
+        return lastDot > 0 ? rutaArchivo.substring(lastDot + 1) : "";
+    }
+    
+    /**
+     * Parsear una línea del Excel/CSV según el formato UNAS
+     * Soporta separación por comas, tabulaciones o punto y coma
      */
     private static Postulante parsearLineaExcel(String linea, int numeroLinea) {
-        // Dividir por tabulaciones (formato TSV del Excel)
-        String[] campos = linea.split("\t");
+        // Detectar separador automáticamente
+        String separador = detectarSeparador(linea);
+        String[] campos = linea.split(separador, -1); // -1 mantiene campos vacíos
         
-        if (campos.length < 30) {
-            System.err.println("⚠️ Línea " + numeroLinea + " incompleta, esperando 30+ campos, encontrados: " + campos.length);
+        if (campos.length < 6) {  // Mínimo: código, nombre, opcion1, modalidad, dni, sexo
+            System.err.println("⚠️ Línea " + numeroLinea + " incompleta, mínimo 6 campos requeridos, encontrados: " + campos.length);
             return null;
         }
         
         try {
             Postulante postulante = new Postulante();
             
-            // Mapear campos según formato proporcionado
+            // Mapear campos básicos (siempre presentes)
             postulante.setCodigo(limpiarCampo(campos[0]));                    // CODIGO
             postulante.setApellidosNombres(limpiarCampo(campos[1]));          // Apellidos y Nombres
-            postulante.setOpcion1(limpiarCampo(campos[2]));                   // OPCION 1
-            postulante.setOpcion2(limpiarCampo(campos[3]));                   // OPCION 2
-            postulante.setModalidad(limpiarCampo(campos[4]));                 // MODALIDAD
-            postulante.setDni(limpiarCampo(campos[5]));                       // DNI
-            postulante.setCodSede(parsearEntero(campos[6], 1));               // CODSEDE
-            postulante.setInscripcion(parsearFecha(campos[7]));               // INSCRIPCION
-            postulante.setUbigeoProcedencia(limpiarCampo(campos[8]));         // UBIGEO PROCEDENCIA
-            postulante.setCodColegio(limpiarCampo(campos[9]));                // CODCOLEGIO
-            postulante.setFechaEgresoColegio(parsearFecha(campos[10]));       // FECHA EGRESOCOLEGIO
-            postulante.setTipoColegio(parsearEntero(campos[11], 2));          // TIPOCOLEGIO
-            postulante.setUbigeoColegio(limpiarCampo(campos[12]));            // UBIGEO COLEGIO
-            postulante.setEstadoCivil(limpiarCampo(campos[13]));              // ESTADO CIVIL
-            postulante.setEncuesta(limpiarCampo(campos[14]));                 // ENCUESTA
-            postulante.setIngreso(parsearEntero(campos[15], 0));              // INGRESO
-            postulante.setIngresoA(limpiarCampo(campos[16]));                 // INGRESO A
-            postulante.setSexo(limpiarCampo(campos[17]));                     // SEXO
-            postulante.setNombreColegio(limpiarCampo(campos[18]));            // NOMBRE COLEGIO
-            postulante.setIdiomaMat(limpiarCampo(campos[19]));                // IDIOMA MAT
-            postulante.setTelCelular(limpiarCampo(campos[20]));               // TELCELULAR
-            postulante.setDireccion(limpiarCampo(campos[21]));                // DIRECCION
-            postulante.setUbigeo(limpiarCampo(campos[22]));                   // UBIGEO
-            postulante.setFecNac(parsearFecha(campos[23]));                   // FECNAC
-            postulante.setNotaAC(parsearDouble(campos[24]));                  // NOTAAC
-            postulante.setNotaCO(parsearDouble(campos[25]));                  // NOTACO
-            postulante.setRespuesta(limpiarCampo(campos[26]));                // RESPUESTA
             
-            // Campos adicionales si existen
-            if (campos.length > 27) {
-                postulante.setEstadoAcademico(limpiarCampo(campos[27]).isEmpty() ? 
-                    "POSTULANTE" : limpiarCampo(campos[27])); // TERMINO SEC.
+            if (campos.length > 2) postulante.setOpcion1(limpiarCampo(campos[2]));                   // OPCION 1
+            if (campos.length > 3) postulante.setOpcion2(limpiarCampo(campos[3]));                   // OPCION 2
+            if (campos.length > 4) postulante.setModalidad(limpiarCampo(campos[4]));                 // MODALIDAD
+            if (campos.length > 5) postulante.setDni(limpiarCampo(campos[5]));                       // DNI
+            
+            // Campos opcionales con verificación de índice
+            if (campos.length > 6) postulante.setCodSede(parsearEntero(campos[6], 1));               // CODSEDE
+            if (campos.length > 7) postulante.setInscripcion(parsearFecha(campos[7]));               // INSCRIPCION
+            if (campos.length > 8) postulante.setUbigeoProcedencia(limpiarCampo(campos[8]));         // UBIGEO PROCEDENCIA
+            if (campos.length > 9) postulante.setCodColegio(limpiarCampo(campos[9]));                // CODCOLEGIO
+            if (campos.length > 10) postulante.setFechaEgresoColegio(parsearFecha(campos[10]));       // FECHA EGRESOCOLEGIO
+            if (campos.length > 11) postulante.setTipoColegio(parsearEntero(campos[11], 2));          // TIPOCOLEGIO
+            if (campos.length > 12) postulante.setUbigeoColegio(limpiarCampo(campos[12]));            // UBIGEO COLEGIO
+            if (campos.length > 13) postulante.setEstadoCivil(limpiarCampo(campos[13]));              // ESTADO CIVIL
+            if (campos.length > 14) postulante.setEncuesta(limpiarCampo(campos[14]));                 // ENCUESTA
+            if (campos.length > 15) postulante.setIngreso(parsearEntero(campos[15], 0));              // INGRESO
+            if (campos.length > 16) postulante.setIngresoA(limpiarCampo(campos[16]));                 // INGRESO A
+            if (campos.length > 17) postulante.setSexo(normalizarSexo(limpiarCampo(campos[17])));     // SEXO
+            if (campos.length > 18) postulante.setNombreColegio(limpiarCampo(campos[18]));            // NOMBRE COLEGIO
+            if (campos.length > 19) postulante.setIdiomaMat(limpiarCampo(campos[19]));                // IDIOMA MAT
+            if (campos.length > 20) postulante.setTelCelular(limpiarCampo(campos[20]));               // TELCELULAR
+            if (campos.length > 21) postulante.setDireccion(limpiarCampo(campos[21]));                // DIRECCION
+            if (campos.length > 22) postulante.setUbigeo(limpiarCampo(campos[22]));                   // UBIGEO
+            if (campos.length > 23) postulante.setFecNac(parsearFecha(campos[23]));                   // FECNAC
+            if (campos.length > 24) postulante.setNotaAC(parsearDouble(campos[24]));                  // NOTAAC
+            if (campos.length > 25) postulante.setNotaCO(parsearDouble(campos[25]));                  // NOTACO
+            if (campos.length > 26) postulante.setRespuesta(limpiarCampo(campos[26]));                // RESPUESTA
+            
+            // Estado académico (por defecto POSTULANTE)
+            if (campos.length > 27 && !limpiarCampo(campos[27]).isEmpty()) {
+                postulante.setEstadoAcademico(limpiarCampo(campos[27]));
+            } else {
+                postulante.setEstadoAcademico("POSTULANTE");
+            }
+            
+            // Validaciones básicas
+            if (postulante.getCodigo().isEmpty() || postulante.getApellidosNombres().isEmpty()) {
+                System.err.println("⚠️ Línea " + numeroLinea + ": Código o nombre vacío");
+                return null;
             }
             
             // Calcular puntaje final
@@ -159,6 +221,43 @@ public class ExcelUtils {
             System.err.println("❌ Error parseando línea " + numeroLinea + ": " + e.getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Detectar separador automáticamente
+     */
+    private static String detectarSeparador(String linea) {
+        // Contar ocurrencias de posibles separadores
+        int comas = (int) linea.chars().filter(ch -> ch == ',').count();
+        int tabs = (int) linea.chars().filter(ch -> ch == '\t').count();
+        int puntoComas = (int) linea.chars().filter(ch -> ch == ';').count();
+        
+        // Retornar el más común
+        if (tabs > comas && tabs > puntoComas) {
+            return "\t";
+        } else if (puntoComas > comas) {
+            return ";";
+        } else {
+            return ",";
+        }
+    }
+    
+    /**
+     * Normalizar valores de sexo
+     */
+    private static String normalizarSexo(String sexo) {
+        if (sexo == null || sexo.trim().isEmpty()) return "";
+        
+        String sexoNorm = sexo.trim().toUpperCase();
+        
+        // Convertir variaciones comunes
+        if (sexoNorm.startsWith("M") || sexoNorm.equals("MASCULINO") || sexoNorm.equals("HOMBRE")) {
+            return "M";
+        } else if (sexoNorm.startsWith("F") || sexoNorm.equals("FEMENINO") || sexoNorm.equals("MUJER")) {
+            return "F";
+        }
+        
+        return sexo; // Retornar original si no coincide
     }
     
     // Métodos auxiliares para parseo

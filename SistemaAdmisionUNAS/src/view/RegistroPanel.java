@@ -5,6 +5,7 @@ import dao.PostulanteDAO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,7 +13,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.text.SimpleDateFormat;
+import java.io.File;
 import util.EventBus;
+import util.ExcelUtils;
 
 /**
  * Panel para mostrar lista de postulantes registrados
@@ -25,7 +28,7 @@ public class RegistroPanel extends JPanel {
     private JTextField txtBuscar;
     private JComboBox<String> cmbFiltroEstado, cmbFiltroModalidad;
     private JLabel lblTotalPostulantes, lblPostulantesDirectos, lblAlumnosLibres;
-    private JButton btnActualizar, btnEliminar, btnExportar;
+    private JButton btnActualizar, btnEliminar, btnExportar, btnImportar;
     private PostulanteDAO postulanteDAO;
     private List<Postulante> listaPostulantes;
     
@@ -243,9 +246,17 @@ public class RegistroPanel extends JPanel {
         btnExportar.setForeground(Color.WHITE);
         btnExportar.setPreferredSize(new Dimension(120, 35));
         
+        // Botón para importar datos
+        btnImportar = new JButton("📥 Importar");
+        btnImportar.setBackground(new Color(155, 89, 182));
+        btnImportar.setForeground(Color.WHITE);
+        btnImportar.setPreferredSize(new Dimension(120, 35));
+        btnImportar.setToolTipText("Importar postulantes desde Excel/CSV");
+        
         panel.add(btnActualizar);
         panel.add(btnEliminar);
         panel.add(btnExportar);
+        panel.add(btnImportar);
         
         return panel;
     }
@@ -272,6 +283,14 @@ public class RegistroPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 exportarDatos();
+            }
+        });
+        
+        // Importar datos
+        btnImportar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                importarDatos();
             }
         });
         
@@ -530,6 +549,145 @@ public class RegistroPanel extends JPanel {
             JOptionPane.showMessageDialog(this, scrollPane, 
                 "Detalles del Postulante", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+    
+    /**
+     * Importar datos desde archivo Excel/CSV
+     */
+    private void importarDatos() {
+        // Configurar selector de archivos
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Seleccionar archivo para importar postulantes");
+        
+        // Filtros de archivo
+        FileNameExtensionFilter filtroCSV = new FileNameExtensionFilter(
+            "Archivos CSV/TXT (*.csv, *.txt)", "csv", "txt");
+        FileNameExtensionFilter filtroExcel = new FileNameExtensionFilter(
+            "Archivos Excel (*.xlsx, *.xls)", "xlsx", "xls");
+        FileNameExtensionFilter filtroTodos = new FileNameExtensionFilter(
+            "Todos los archivos soportados", "csv", "txt", "xlsx", "xls");
+        
+        fileChooser.addChoosableFileFilter(filtroTodos);
+        fileChooser.addChoosableFileFilter(filtroCSV);
+        fileChooser.addChoosableFileFilter(filtroExcel);
+        fileChooser.setFileFilter(filtroTodos);
+        
+        // Mostrar selector
+        int resultado = fileChooser.showOpenDialog(this);
+        if (resultado == JFileChooser.APPROVE_OPTION) {
+            File archivoSeleccionado = fileChooser.getSelectedFile();
+            
+            // Confirmar importación
+            int confirmacion = JOptionPane.showConfirmDialog(this,
+                "¿Está seguro de importar datos desde:\n" + archivoSeleccionado.getName() + "?\n\n" +
+                "Esta acción agregará nuevos postulantes a la base de datos.",
+                "Confirmar Importación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+            
+            if (confirmacion == JOptionPane.YES_OPTION) {
+                realizarImportacion(archivoSeleccionado);
+            }
+        }
+    }
+    
+    /**
+     * Realizar la importación del archivo seleccionado
+     */
+    private void realizarImportacion(File archivo) {
+        // Crear dialog de progreso
+        JDialog dialogProgreso = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), 
+            "Importando datos...", true);
+        dialogProgreso.setSize(400, 150);
+        dialogProgreso.setLocationRelativeTo(this);
+        
+        JProgressBar progressBar = new JProgressBar();
+        progressBar.setIndeterminate(true);
+        progressBar.setString("Procesando archivo...");
+        progressBar.setStringPainted(true);
+        
+        JLabel lblEstado = new JLabel("Iniciando importación...", SwingConstants.CENTER);
+        
+        JPanel panelProgreso = new JPanel(new BorderLayout());
+        panelProgreso.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panelProgreso.add(lblEstado, BorderLayout.NORTH);
+        panelProgreso.add(progressBar, BorderLayout.CENTER);
+        
+        dialogProgreso.add(panelProgreso);
+        
+        // Realizar importación en hilo separado
+        SwingWorker<String, String> worker = new SwingWorker<String, String>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                publish("Leyendo archivo...");
+                
+                // Importar usando ExcelUtils
+                List<Postulante> postulantesImportados = ExcelUtils.importarPostulantesDesdeExcel(archivo.getAbsolutePath());
+                
+                if (postulantesImportados.isEmpty()) {
+                    return "No se encontraron datos válidos en el archivo.";
+                }
+                
+                publish("Guardando en base de datos...");
+                
+                // Guardar postulantes en la base de datos
+                int exitosos = 0;
+                int errores = 0;
+                
+                for (Postulante postulante : postulantesImportados) {
+                    try {
+                        if (postulanteDAO.crear(postulante)) {
+                            exitosos++;
+                        } else {
+                            errores++;
+                        }
+                    } catch (Exception e) {
+                        errores++;
+                        System.err.println("Error guardando postulante " + postulante.getCodigo() + ": " + e.getMessage());
+                    }
+                }
+                
+                return String.format("Importación completada:\n✅ %d postulantes importados exitosamente\n❌ %d errores", 
+                    exitosos, errores);
+            }
+            
+            @Override
+            protected void process(List<String> chunks) {
+                if (!chunks.isEmpty()) {
+                    lblEstado.setText(chunks.get(chunks.size() - 1));
+                }
+            }
+            
+            @Override
+            protected void done() {
+                dialogProgreso.dispose();
+                
+                try {
+                    String resultado = get();
+                    
+                    // Mostrar resultado
+                    JOptionPane.showMessageDialog(RegistroPanel.this,
+                        resultado,
+                        "Resultado de Importación",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Actualizar tabla
+                    actualizarTabla();
+                    
+                    // Notificar otros paneles
+                    EventBus.getInstance().notificarPostulante("POSTULANTES_IMPORTADOS", null);
+                    
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(RegistroPanel.this,
+                        "Error durante la importación:\n" + e.getMessage(),
+                        "Error de Importación",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        
+        worker.execute();
+        dialogProgreso.setVisible(true);
     }
     
     /**

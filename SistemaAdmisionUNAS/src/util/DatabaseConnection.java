@@ -11,8 +11,8 @@ import java.sql.Statement;
  */
 public class DatabaseConnection {
     
-    // Configuración de H2 Database
-    private static final String DB_URL = "jdbc:h2:~/sistemaadmision;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1";
+    // Configuración de H2 Database con persistencia completa
+    private static final String DB_URL = "jdbc:h2:./data/sistemaadmision;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;CACHE_SIZE=65536";
     private static final String DB_USER = "sa";
     private static final String DB_PASSWORD = "";
     

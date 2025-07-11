@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
         
         JMenuItem itemResultados = new JMenuItem("🏆 Resultados");
         itemResultados.addActionListener(e -> {
-            tabbedPane.setSelectedIndex(3);
+            tabbedPane.setSelectedIndex(2);
             resultadosPanel.actualizarResultados();
         });
         
@@ -122,12 +122,10 @@ public class MainFrame extends JFrame {
         registroPanel = new RegistroPanel();
         resultadosPanel = new ResultadosPanel();
         AdministracionPanel administracionPanel = new AdministracionPanel();
-        ImportarPanel importarPanel = new ImportarPanel(); // NUEVO PANEL FUNCIONAL
         
-        // Agregar pestañas
+        // Agregar pestañas (la importación ahora está integrada en Lista)
         tabbedPane.addTab("📝 Inscripción", inscripcionPanel);
         tabbedPane.addTab("📋 Lista", registroPanel);
-        tabbedPane.addTab("📊 Importar", importarPanel); // REEMPLAZADO
         tabbedPane.addTab("🏆 Resultados", resultadosPanel);
         tabbedPane.addTab("⚙️ Administración", administracionPanel);
         
@@ -142,7 +140,6 @@ public class MainFrame extends JFrame {
         tabbedPane.setBackgroundAt(1, new Color(230, 240, 255));
         tabbedPane.setBackgroundAt(2, new Color(255, 245, 230));
         tabbedPane.setBackgroundAt(3, new Color(245, 230, 255));
-        tabbedPane.setBackgroundAt(4, new Color(255, 235, 205)); // NUEVO COLOR
     } catch (Exception e) {
         System.err.println("Error configurando colores: " + e.getMessage());
     }
