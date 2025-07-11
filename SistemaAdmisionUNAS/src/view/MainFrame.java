@@ -121,18 +121,15 @@ public class MainFrame extends JFrame {
         inscripcionPanel = new InscripcionPanel();
         registroPanel = new RegistroPanel();
         resultadosPanel = new ResultadosPanel();
-        AdministracionPanel administracionPanel = new AdministracionPanel(); // NUEVO
-        
-        // Panel temporal para importar
-        JPanel panelImportar = createPlaceholderPanel("📊 IMPORTAR DATOS", 
-            "Funcionalidad de importación Excel/CSV será implementada próximamente");
+        AdministracionPanel administracionPanel = new AdministracionPanel();
+        ImportarPanel importarPanel = new ImportarPanel(); // NUEVO PANEL FUNCIONAL
         
         // Agregar pestañas
         tabbedPane.addTab("📝 Inscripción", inscripcionPanel);
         tabbedPane.addTab("📋 Lista", registroPanel);
-        tabbedPane.addTab("📊 Importar", panelImportar);
+        tabbedPane.addTab("📊 Importar", importarPanel); // REEMPLAZADO
         tabbedPane.addTab("🏆 Resultados", resultadosPanel);
-        tabbedPane.addTab("⚙️ Administración", administracionPanel); // AGREGADO
+        tabbedPane.addTab("⚙️ Administración", administracionPanel);
         
     } catch (Exception e) {
         System.err.println("Error creando pestañas: " + e.getMessage());

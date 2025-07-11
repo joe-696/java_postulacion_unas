@@ -12,6 +12,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.text.SimpleDateFormat;
+import util.EventBus;
 
 /**
  * Panel para mostrar lista de postulantes registrados
@@ -32,6 +33,10 @@ public class RegistroPanel extends JPanel {
         this.postulanteDAO = new PostulanteDAO();
         initComponents();
         setupEventHandlers();
+        
+        // 🔄 SUSCRIBIRSE A EVENTOS PARA SINCRONIZACIÓN
+        suscribirseAEventos();
+        
         // Cargar datos al inicializar
         actualizarTabla();
     }
@@ -525,5 +530,26 @@ public class RegistroPanel extends JPanel {
             JOptionPane.showMessageDialog(this, scrollPane, 
                 "Detalles del Postulante", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+    
+    /**
+     * Suscribirse a eventos para sincronización automática
+     */
+    private void suscribirseAEventos() {
+        // Escuchar eventos de postulantes
+        EventBus.getInstance().suscribirPostulantes(event -> {
+            SwingUtilities.invokeLater(() -> {
+                switch (event.getTipo()) {
+                    case "POSTULANTE_AGREGADO":
+                        actualizarTabla();
+                        System.out.println("🔄 Tabla actualizada: nuevo postulante agregado");
+                        break;
+                    case "POSTULANTES_IMPORTADOS":
+                        actualizarTabla();
+                        System.out.println("🔄 Tabla actualizada: " + event.getCantidad() + " postulantes importados");
+                        break;
+                }
+            });
+        });
     }
 }

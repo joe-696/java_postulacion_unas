@@ -57,16 +57,160 @@ public class ExcelUtils {
     }
     
     /**
-     * SIMULA la importación desde Excel con datos realistas
-     * En un proyecto real usaríamos Apache POI
+     * Importar postulantes desde archivo Excel/CSV con formato específico UNAS
      */
     public static List<Postulante> importarPostulantesDesdeExcel(String rutaArchivo) {
-        System.out.println("📊 Simulando importación desde: " + rutaArchivo);
-        return importarPostulantesSimulado();
+        List<Postulante> postulantes = new ArrayList<>();
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(rutaArchivo))) {
+            String linea;
+            boolean esPrimeraLinea = true;
+            int lineaNumero = 0;
+            
+            System.out.println("📥 Importando postulantes desde: " + rutaArchivo);
+            
+            while ((linea = reader.readLine()) != null) {
+                lineaNumero++;
+                
+                // Saltar encabezados
+                if (esPrimeraLinea) {
+                    esPrimeraLinea = false;
+                    continue;
+                }
+                
+                try {
+                    Postulante postulante = parsearLineaExcel(linea, lineaNumero);
+                    if (postulante != null) {
+                        postulantes.add(postulante);
+                    }
+                } catch (Exception e) {
+                    System.err.println("❌ Error en línea " + lineaNumero + ": " + e.getMessage());
+                }
+            }
+            
+            System.out.println("✅ Importación completada: " + postulantes.size() + " postulantes");
+            
+            // Notificar evento de importación
+            EventBus.getInstance().publicarPostulantesImportados(postulantes.size());
+            
+        } catch (IOException e) {
+            System.err.println("❌ Error leyendo archivo: " + e.getMessage());
+        }
+        
+        return postulantes;
     }
     
     /**
-     * Genera datos simulados realistas para pruebas
+     * Parsear una línea del Excel según el formato UNAS
+     */
+    private static Postulante parsearLineaExcel(String linea, int numeroLinea) {
+        // Dividir por tabulaciones (formato TSV del Excel)
+        String[] campos = linea.split("\t");
+        
+        if (campos.length < 30) {
+            System.err.println("⚠️ Línea " + numeroLinea + " incompleta, esperando 30+ campos, encontrados: " + campos.length);
+            return null;
+        }
+        
+        try {
+            Postulante postulante = new Postulante();
+            
+            // Mapear campos según formato proporcionado
+            postulante.setCodigo(limpiarCampo(campos[0]));                    // CODIGO
+            postulante.setApellidosNombres(limpiarCampo(campos[1]));          // Apellidos y Nombres
+            postulante.setOpcion1(limpiarCampo(campos[2]));                   // OPCION 1
+            postulante.setOpcion2(limpiarCampo(campos[3]));                   // OPCION 2
+            postulante.setModalidad(limpiarCampo(campos[4]));                 // MODALIDAD
+            postulante.setDni(limpiarCampo(campos[5]));                       // DNI
+            postulante.setCodSede(parsearEntero(campos[6], 1));               // CODSEDE
+            postulante.setInscripcion(parsearFecha(campos[7]));               // INSCRIPCION
+            postulante.setUbigeoProcedencia(limpiarCampo(campos[8]));         // UBIGEO PROCEDENCIA
+            postulante.setCodColegio(limpiarCampo(campos[9]));                // CODCOLEGIO
+            postulante.setFechaEgresoColegio(parsearFecha(campos[10]));       // FECHA EGRESOCOLEGIO
+            postulante.setTipoColegio(parsearEntero(campos[11], 2));          // TIPOCOLEGIO
+            postulante.setUbigeoColegio(limpiarCampo(campos[12]));            // UBIGEO COLEGIO
+            postulante.setEstadoCivil(limpiarCampo(campos[13]));              // ESTADO CIVIL
+            postulante.setEncuesta(limpiarCampo(campos[14]));                 // ENCUESTA
+            postulante.setIngreso(parsearEntero(campos[15], 0));              // INGRESO
+            postulante.setIngresoA(limpiarCampo(campos[16]));                 // INGRESO A
+            postulante.setSexo(limpiarCampo(campos[17]));                     // SEXO
+            postulante.setNombreColegio(limpiarCampo(campos[18]));            // NOMBRE COLEGIO
+            postulante.setIdiomaMat(limpiarCampo(campos[19]));                // IDIOMA MAT
+            postulante.setTelCelular(limpiarCampo(campos[20]));               // TELCELULAR
+            postulante.setDireccion(limpiarCampo(campos[21]));                // DIRECCION
+            postulante.setUbigeo(limpiarCampo(campos[22]));                   // UBIGEO
+            postulante.setFecNac(parsearFecha(campos[23]));                   // FECNAC
+            postulante.setNotaAC(parsearDouble(campos[24]));                  // NOTAAC
+            postulante.setNotaCO(parsearDouble(campos[25]));                  // NOTACO
+            postulante.setRespuesta(limpiarCampo(campos[26]));                // RESPUESTA
+            
+            // Campos adicionales si existen
+            if (campos.length > 27) {
+                postulante.setEstadoAcademico(limpiarCampo(campos[27]).isEmpty() ? 
+                    "POSTULANTE" : limpiarCampo(campos[27])); // TERMINO SEC.
+            }
+            
+            // Calcular puntaje final
+            postulante.calcularPuntajeFinal();
+            
+            return postulante;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error parseando línea " + numeroLinea + ": " + e.getMessage());
+            return null;
+        }
+    }
+    
+    // Métodos auxiliares para parseo
+    private static String limpiarCampo(String campo) {
+        if (campo == null) return "";
+        return campo.trim().replaceAll("\"", "");
+    }
+    
+    private static int parsearEntero(String campo, int valorDefault) {
+        try {
+            String limpio = limpiarCampo(campo);
+            return limpio.isEmpty() ? valorDefault : Integer.parseInt(limpio);
+        } catch (NumberFormatException e) {
+            return valorDefault;
+        }
+    }
+    
+    private static double parsearDouble(String campo) {
+        try {
+            String limpio = limpiarCampo(campo);
+            return limpio.isEmpty() ? 0.0 : Double.parseDouble(limpio);
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+    
+    private static Date parsearFecha(String campo) {
+        try {
+            String limpio = limpiarCampo(campo);
+            if (limpio.isEmpty()) return new Date();
+            
+            // Intentar varios formatos de fecha
+            String[] formatos = {"dd/MM/yyyy", "dd-MM-yyyy", "yyyy-MM-dd"};
+            
+            for (String formato : formatos) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat(formato);
+                    return sdf.parse(limpio);
+                } catch (ParseException ignored) {
+                    // Continuar con siguiente formato
+                }
+            }
+            
+            return new Date(); // Fecha actual si no se puede parsear
+        } catch (Exception e) {
+            return new Date();
+        }
+    }
+    
+    /**
+     * SIMULA la importación desde Excel con datos realistas
+     * En un proyecto real usaríamos Apache POI
      */
     public static List<Postulante> importarPostulantesSimulado() {
         System.out.println("📊 Generando datos simulados de postulantes...");

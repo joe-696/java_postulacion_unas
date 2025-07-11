@@ -3,6 +3,7 @@ package view;
 // Imports específicos del proyecto
 import model.Postulante;
 import dao.PostulanteDAO;
+import util.EventBus;
 
 // Imports de Java/Swing
 import javax.swing.*;
@@ -34,6 +35,10 @@ public class InscripcionPanel extends JPanel {
         try {
             this.postulanteDAO = new PostulanteDAO();
             initComponents();
+            
+            // 🔄 SUSCRIBIRSE A EVENTOS DE CARRERAS
+            suscribirseAEventos();
+            
             System.out.println("✅ InscripcionPanel inicializado correctamente");
         } catch (Exception e) {
             System.err.println("❌ Error inicializando InscripcionPanel: " + e.getMessage());
@@ -378,11 +383,16 @@ public class InscripcionPanel extends JPanel {
             
             // Guardar en base de datos
             if (postulanteDAO.guardar(postulante)) {
+                
+                // 🔄 NOTIFICAR EVENTO - Sincronización automática
+                EventBus.getInstance().publicarPostulanteAgregado();
+                
                 JOptionPane.showMessageDialog(this,
                     "✅ Postulante registrado exitosamente\n\n" +
                     "Código: " + postulante.getCodigo() + "\n" +
                     "Nombre: " + postulante.getApellidosNombres() + "\n" +
-                    "DNI: " + postulante.getDni(),
+                    "DNI: " + postulante.getDni() + "\n\n" +
+                    "📢 Sincronizando con otros módulos...",
                     "Registro Exitoso",
                     JOptionPane.INFORMATION_MESSAGE);
                 
@@ -412,6 +422,55 @@ public class InscripcionPanel extends JPanel {
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
+    }
+    
+    private void suscribirseAEventos() {
+        EventBus.getInstance().suscribirCarreras(event -> {
+            SwingUtilities.invokeLater(() -> {
+                if ("CARRERA_AGREGADA".equals(event.getTipo())) {
+                    // Actualizar comboboxes de opciones
+                    actualizarComboBoxCarreras();
+                    
+                    System.out.println("🔄 Carreras actualizadas en Inscripción: " + event.getNombreCarrera());
+                }
+            });
+        });
+    }
+    
+    /**
+     * Actualizar ComboBoxes con las carreras disponibles
+     */
+    private void actualizarComboBoxCarreras() {
+        String[] carreras = getCarreras();
+        
+        // Guardar selecciones actuales
+        String opcion1Actual = (String) cmbOpcion1.getSelectedItem();
+        String opcion2Actual = (String) cmbOpcion2.getSelectedItem();
+        
+        // Actualizar modelos
+        DefaultComboBoxModel<String> modelo1 = new DefaultComboBoxModel<>(carreras);
+        DefaultComboBoxModel<String> modelo2 = new DefaultComboBoxModel<>(carreras);
+        
+        cmbOpcion1.setModel(modelo1);
+        cmbOpcion2.setModel(modelo2);
+        
+        // Restaurar selecciones si aún existen
+        if (opcion1Actual != null && contains(carreras, opcion1Actual)) {
+            cmbOpcion1.setSelectedItem(opcion1Actual);
+        }
+        if (opcion2Actual != null && contains(carreras, opcion2Actual)) {
+            cmbOpcion2.setSelectedItem(opcion2Actual);
+        }
+    }
+    
+    /**
+     * Verificar si un array contiene un elemento
+     */
+    private boolean contains(String[] array, String item) {
+        for (String s : array) {
+            if (s.equals(item)) return true;
+        }
+        return false;
     }
     
     private boolean validarCampos() {

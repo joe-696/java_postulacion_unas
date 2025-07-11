@@ -4,6 +4,7 @@ import model.Carrera;
 import model.ExamenConfig;
 import dao.PostulanteDAO;
 import util.DatabaseConnection;
+import util.EventBus;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
@@ -521,14 +522,18 @@ public class AdministracionPanel extends JPanel {
             nuevaCarrera.setCurvaAplicada(curva);
             mapaCarreras.put(nombre, nuevaCarrera);
             
+            // 🔄 NOTIFICAR EVENTO - Sincronización automática
+            EventBus.getInstance().publicarCarreraAgregada(nombre);
+            
             // Limpiar formulario
             txtNombreCarrera.setText("");
             txtVacantes.setText("");
             txtCurva.setText("2.0");
             
             JOptionPane.showMessageDialog(this,
-                "Carrera agregada exitosamente",
-                "Éxito",
+                "✅ Carrera agregada exitosamente\n" +
+                "📢 Sincronizando con otros módulos...",
+                "Carrera Agregada",
                 JOptionPane.INFORMATION_MESSAGE);
             
         } catch (NumberFormatException e) {
