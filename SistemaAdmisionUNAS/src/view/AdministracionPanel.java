@@ -3,6 +3,7 @@ package view;
 import model.Carrera;
 import model.ExamenConfig;
 import dao.PostulanteDAO;
+import dao.CarreraDAO;
 import util.DatabaseConnection;
 import util.EventBus;
 import javax.swing.*;
@@ -45,11 +46,13 @@ public class AdministracionPanel extends JPanel {
     // Configuración global
     private ExamenConfig configuracionExamen;
     private Map<String, Carrera> mapaCarreras;
+    private CarreraDAO carreraDAO;
     
     public AdministracionPanel() {
         try {
             this.configuracionExamen = new ExamenConfig();
             this.mapaCarreras = new HashMap<>();
+            this.carreraDAO = new CarreraDAO();
             initComponents();
             cargarDatosIniciales();
             System.out.println("✅ AdministracionPanel inicializado correctamente");
@@ -482,7 +485,7 @@ public class AdministracionPanel extends JPanel {
     }
     
     private void agregarCarrera() {
-        String nombre = txtNombreCarrera.getText().trim();
+        String nombre = txtNombreCarrera.getText().trim().toUpperCase();
         String vacantesStr = txtVacantes.getText().trim();
         String tipoExamen = (String) cmbTipoExamen.getSelectedItem();
         String curvaStr = txtCurva.getText().trim();
@@ -497,37 +500,56 @@ public class AdministracionPanel extends JPanel {
         
         try {
             int vacantes = Integer.parseInt(vacantesStr);
-            double curva = Double.parseDouble(curvaStr);
+            double curva = curvaStr.isEmpty() ? 0.0 : Double.parseDouble(curvaStr);
             
-            // Verificar duplicados
-            for (int i = 0; i < modeloCarreras.getRowCount(); i++) {
-                if (nombre.equals(modeloCarreras.getValueAt(i, 0))) {
-                    JOptionPane.showMessageDialog(this,
-                        "La carrera ya existe",
-                        "Duplicado",
-                        JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
+            // Verificar si ya existe en la base de datos
+            if (carreraDAO.existeCarrera(nombre)) {
+                JOptionPane.showMessageDialog(this,
+                    "La carrera ya existe en el sistema",
+                    "Carrera Duplicada",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
             }
             
-            // Agregar a la tabla
-            modeloCarreras.addRow(new Object[]{
-                nombre, vacantes, tipoExamen, curva, "Activa"
-            });
-            
-            // Agregar al mapa
-            Carrera nuevaCarrera = new Carrera("CAR" + (mapaCarreras.size() + 1), 
-                nombre, "FACULTAD", vacantes);
-            nuevaCarrera.setTipoExamen(tipoExamen);
-            nuevaCarrera.setCurvaAplicada(curva);
-            mapaCarreras.put(nombre, nuevaCarrera);
-            
-            // 🔄 NOTIFICAR EVENTO - Sincronización automática
-            EventBus.getInstance().publicarCarreraAgregada(nombre);
-            
-            // Limpiar formulario
-            txtNombreCarrera.setText("");
-            txtVacantes.setText("");
+            // Agregar a la base de datos
+            if (carreraDAO.agregarCarrera(nombre)) {
+                // Agregar a la tabla de visualización
+                modeloCarreras.addRow(new Object[]{
+                    nombre, vacantes, tipoExamen, curva, "Activa"
+                });
+                
+                // Agregar al mapa local
+                Carrera nuevaCarrera = new Carrera("CAR" + (mapaCarreras.size() + 1), 
+                    nombre, "FACULTAD", vacantes);
+                nuevaCarrera.setTipoExamen(tipoExamen);
+                nuevaCarrera.setCurvaAplicada(curva);
+                mapaCarreras.put(nombre, nuevaCarrera);
+                
+                // 🔄 NOTIFICAR EVENTO - Sincronización automática
+                EventBus.getInstance().publicarCarreraAgregada(nombre);
+                
+                // Limpiar formulario
+                txtNombreCarrera.setText("");
+                txtVacantes.setText("");
+                txtCurva.setText("");
+                
+                JOptionPane.showMessageDialog(this,
+                    "✅ Carrera agregada exitosamente: " + nombre +
+                    "\n\nLa carrera estará disponible automáticamente en:" +
+                    "\n• Panel de Inscripción" +
+                    "\n• Formularios de registro" +
+                    "\n• Reportes del sistema",
+                    "Carrera Agregada",
+                    JOptionPane.INFORMATION_MESSAGE);
+                
+                System.out.println("✅ Carrera agregada: " + nombre);
+                
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "❌ Error agregando la carrera a la base de datos",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
             txtCurva.setText("2.0");
             
             JOptionPane.showMessageDialog(this,

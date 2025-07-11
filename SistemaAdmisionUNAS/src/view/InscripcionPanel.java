@@ -3,6 +3,7 @@ package view;
 // Imports específicos del proyecto
 import model.Postulante;
 import dao.PostulanteDAO;
+import dao.CarreraDAO;
 import util.EventBus;
 
 // Imports de Java/Swing
@@ -13,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Panel de inscripción de postulantes
@@ -30,10 +32,12 @@ public class InscripcionPanel extends JPanel {
     
     // DAO para persistencia
     private PostulanteDAO postulanteDAO;
+    private CarreraDAO carreraDAO;
     
     public InscripcionPanel() {
         try {
             this.postulanteDAO = new PostulanteDAO();
+            this.carreraDAO = new CarreraDAO();
             initComponents();
             
             // 🔄 SUSCRIBIRSE A EVENTOS DE CARRERAS
@@ -296,24 +300,37 @@ public class InscripcionPanel extends JPanel {
     }
     
     private String[] getCarreras() {
-        return new String[]{
-            "-- Seleccione una carrera --",
-            "INGENIERÍA DE SISTEMAS E INFORMÁTICA",
-            "MEDICINA HUMANA",
-            "INGENIERÍA CIVIL",
-            "ADMINISTRACIÓN",
-            "CONTABILIDAD",
-            "DERECHO Y CIENCIAS POLÍTICAS",
-            "PSICOLOGÍA",
-            "ENFERMERÍA",
-            "INGENIERÍA INDUSTRIAL",
-            "ECONOMÍA",
-            "MEDICINA VETERINARIA",
-            "INGENIERÍA AMBIENTAL",
-            "ARQUITECTURA",
-            "EDUCACIÓN INICIAL",
-            "EDUCACIÓN PRIMARIA"
-        };
+        try {
+            List<String> carrerasDB = carreraDAO.obtenerTodasLasCarreras();
+            
+            // Agregar opción por defecto al inicio
+            String[] carreras = new String[carrerasDB.size() + 1];
+            carreras[0] = "-- Seleccione una carrera --";
+            
+            for (int i = 0; i < carrerasDB.size(); i++) {
+                carreras[i + 1] = carrerasDB.get(i);
+            }
+            
+            return carreras;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error obteniendo carreras: " + e.getMessage());
+            
+            // Fallback a lista por defecto
+            return new String[]{
+                "-- Seleccione una carrera --",
+                "INGENIERÍA DE SISTEMAS E INFORMÁTICA",
+                "MEDICINA HUMANA",
+                "INGENIERÍA CIVIL",
+                "ADMINISTRACIÓN",
+                "CONTABILIDAD",
+                "DERECHO Y CIENCIAS POLÍTICAS",
+                "PSICOLOGÍA",
+                "ENFERMERÍA",
+                "INGENIERÍA INDUSTRIAL",
+                "ECONOMÍA"
+            };
+        }
     }
     
     private void generarCodigo() {

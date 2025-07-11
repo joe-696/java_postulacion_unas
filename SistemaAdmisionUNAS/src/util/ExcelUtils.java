@@ -153,51 +153,75 @@ public class ExcelUtils {
     /**
      * Parsear una línea del Excel/CSV según el formato UNAS
      * Soporta separación por comas, tabulaciones o punto y coma
+     * Acepta campos en blanco y los maneja correctamente
      */
     private static Postulante parsearLineaExcel(String linea, int numeroLinea) {
         // Detectar separador automáticamente
         String separador = detectarSeparador(linea);
         String[] campos = linea.split(separador, -1); // -1 mantiene campos vacíos
         
-        if (campos.length < 6) {  // Mínimo: código, nombre, opcion1, modalidad, dni, sexo
-            System.err.println("⚠️ Línea " + numeroLinea + " incompleta, mínimo 6 campos requeridos, encontrados: " + campos.length);
+        // Reducir requisitos mínimos - solo necesitamos código y nombre
+        if (campos.length < 2) {  
+            System.err.println("⚠️ Línea " + numeroLinea + " incompleta, mínimo 2 campos requeridos (código, nombre)");
+            return null;
+        }
+        
+        // Validar que al menos código y nombre no estén vacíos
+        String codigo = limpiarCampo(campos[0]);
+        String nombres = campos.length > 1 ? limpiarCampo(campos[1]) : "";
+        
+        if (codigo.isEmpty() || nombres.isEmpty()) {
+            System.err.println("⚠️ Línea " + numeroLinea + " - Código y nombre son obligatorios");
             return null;
         }
         
         try {
             Postulante postulante = new Postulante();
             
-            // Mapear campos básicos (siempre presentes)
-            postulante.setCodigo(limpiarCampo(campos[0]));                    // CODIGO
-            postulante.setApellidosNombres(limpiarCampo(campos[1]));          // Apellidos y Nombres
+            // Campos obligatorios
+            postulante.setCodigo(codigo);                    
+            postulante.setApellidosNombres(nombres);          
             
-            if (campos.length > 2) postulante.setOpcion1(limpiarCampo(campos[2]));                   // OPCION 1
-            if (campos.length > 3) postulante.setOpcion2(limpiarCampo(campos[3]));                   // OPCION 2
-            if (campos.length > 4) postulante.setModalidad(limpiarCampo(campos[4]));                 // MODALIDAD
-            if (campos.length > 5) postulante.setDni(limpiarCampo(campos[5]));                       // DNI
+            // Campos opcionales con valores por defecto
+            postulante.setOpcion1(campos.length > 2 ? limpiarCampoConDefault(campos[2], "SIN ESPECIFICAR") : "SIN ESPECIFICAR");
+            postulante.setOpcion2(campos.length > 3 ? limpiarCampoConDefault(campos[3], "") : "");
+            postulante.setModalidad(campos.length > 4 ? limpiarCampoConDefault(campos[4], "ORDINARIO") : "ORDINARIO");
+            postulante.setDni(campos.length > 5 ? limpiarCampoConDefault(campos[5], generarDniTemporal()) : generarDniTemporal());
             
-            // Campos opcionales con verificación de índice
-            if (campos.length > 6) postulante.setCodSede(parsearEntero(campos[6], 1));               // CODSEDE
-            if (campos.length > 7) postulante.setInscripcion(parsearFecha(campos[7]));               // INSCRIPCION
-            if (campos.length > 8) postulante.setUbigeoProcedencia(limpiarCampo(campos[8]));         // UBIGEO PROCEDENCIA
-            if (campos.length > 9) postulante.setCodColegio(limpiarCampo(campos[9]));                // CODCOLEGIO
-            if (campos.length > 10) postulante.setFechaEgresoColegio(parsearFecha(campos[10]));       // FECHA EGRESOCOLEGIO
-            if (campos.length > 11) postulante.setTipoColegio(parsearEntero(campos[11], 2));          // TIPOCOLEGIO
-            if (campos.length > 12) postulante.setUbigeoColegio(limpiarCampo(campos[12]));            // UBIGEO COLEGIO
-            if (campos.length > 13) postulante.setEstadoCivil(limpiarCampo(campos[13]));              // ESTADO CIVIL
-            if (campos.length > 14) postulante.setEncuesta(limpiarCampo(campos[14]));                 // ENCUESTA
-            if (campos.length > 15) postulante.setIngreso(parsearEntero(campos[15], 0));              // INGRESO
-            if (campos.length > 16) postulante.setIngresoA(limpiarCampo(campos[16]));                 // INGRESO A
-            if (campos.length > 17) postulante.setSexo(normalizarSexo(limpiarCampo(campos[17])));     // SEXO
-            if (campos.length > 18) postulante.setNombreColegio(limpiarCampo(campos[18]));            // NOMBRE COLEGIO
-            if (campos.length > 19) postulante.setIdiomaMat(limpiarCampo(campos[19]));                // IDIOMA MAT
-            if (campos.length > 20) postulante.setTelCelular(limpiarCampo(campos[20]));               // TELCELULAR
-            if (campos.length > 21) postulante.setDireccion(limpiarCampo(campos[21]));                // DIRECCION
-            if (campos.length > 22) postulante.setUbigeo(limpiarCampo(campos[22]));                   // UBIGEO
-            if (campos.length > 23) postulante.setFecNac(parsearFecha(campos[23]));                   // FECNAC
-            if (campos.length > 24) postulante.setNotaAC(parsearDouble(campos[24]));                  // NOTAAC
-            if (campos.length > 25) postulante.setNotaCO(parsearDouble(campos[25]));                  // NOTACO
-            if (campos.length > 26) postulante.setRespuesta(limpiarCampo(campos[26]));                // RESPUESTA
+            // Campos adicionales opcionales
+            if (campos.length > 6) postulante.setSexo(normalizarSexo(limpiarCampo(campos[6])));
+            if (campos.length > 7) postulante.setEstadoAcademico(limpiarCampoConDefault(campos[7], "POSTULANTE"));
+            if (campos.length > 8) postulante.setNotaAC(parsearDouble(campos[8]));
+            if (campos.length > 9) postulante.setNotaCO(parsearDouble(campos[9]));
+            
+            // Campos extendidos si están disponibles
+            if (campos.length > 10) postulante.setCodSede(parsearEntero(campos[10], 1));               
+            if (campos.length > 11) postulante.setInscripcion(parsearFecha(campos[11]));               
+            if (campos.length > 12) postulante.setUbigeoProcedencia(limpiarCampo(campos[12]));         
+            if (campos.length > 13) postulante.setCodColegio(limpiarCampo(campos[13]));                
+            if (campos.length > 14) postulante.setFechaEgresoColegio(parsearFecha(campos[14]));       
+            if (campos.length > 15) postulante.setTipoColegio(parsearEntero(campos[15], 2));          
+            if (campos.length > 16) postulante.setUbigeoColegio(limpiarCampo(campos[16]));            
+            if (campos.length > 17) postulante.setEstadoCivil(limpiarCampo(campos[17]));              
+            if (campos.length > 18) postulante.setEncuesta(limpiarCampo(campos[18]));                 
+            if (campos.length > 19) postulante.setIngreso(parsearEntero(campos[19], 0));              
+            if (campos.length > 20) postulante.setIngresoA(limpiarCampo(campos[20]));                 
+            if (campos.length > 21) postulante.setNombreColegio(limpiarCampo(campos[21]));            
+            if (campos.length > 22) postulante.setIdiomaMat(limpiarCampo(campos[22]));                
+            if (campos.length > 23) postulante.setTelCelular(limpiarCampo(campos[23]));               
+            if (campos.length > 24) postulante.setDireccion(limpiarCampo(campos[24]));                
+            if (campos.length > 25) postulante.setUbigeo(limpiarCampo(campos[25]));                   
+            if (campos.length > 26) postulante.setFecNac(parsearFecha(campos[26]));                   
+            if (campos.length > 27) postulante.setRespuesta(limpiarCampo(campos[27]));                
+            
+            // Valores por defecto para campos críticos
+            if (postulante.getInscripcion() == null) {
+                postulante.setInscripcion(new Date());
+            }
+            
+            if (postulante.getEstadoAcademico() == null || postulante.getEstadoAcademico().isEmpty()) {
+                postulante.setEstadoAcademico("POSTULANTE");
+            }
             
             // Estado académico (por defecto POSTULANTE)
             if (campos.length > 27 && !limpiarCampo(campos[27]).isEmpty()) {
@@ -264,6 +288,21 @@ public class ExcelUtils {
     private static String limpiarCampo(String campo) {
         if (campo == null) return "";
         return campo.trim().replaceAll("\"", "");
+    }
+    
+    /**
+     * Limpiar campo con valor por defecto si está vacío
+     */
+    private static String limpiarCampoConDefault(String campo, String valorDefault) {
+        String limpio = limpiarCampo(campo);
+        return limpio.isEmpty() ? valorDefault : limpio;
+    }
+    
+    /**
+     * Generar DNI temporal para casos donde no se proporciona
+     */
+    private static String generarDniTemporal() {
+        return String.format("TEMP%04d", (int)(Math.random() * 10000));
     }
     
     private static int parsearEntero(String campo, int valorDefault) {

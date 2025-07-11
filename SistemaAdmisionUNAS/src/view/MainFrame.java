@@ -22,8 +22,16 @@ public class MainFrame extends JFrame {
     
     private void initComponents() {
         setTitle("🎓 Sistema de Admisión UNAS - v1.0");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
+        
+        // Agregar hook de cierre para guardar datos
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                cerrarAplicacion();
+            }
+        });
         
         createTabbedPane();
         createMenuBar();
@@ -44,15 +52,7 @@ public class MainFrame extends JFrame {
         menuArchivo.addSeparator();
         
         JMenuItem itemSalir = new JMenuItem("🚪 Salir");
-        itemSalir.addActionListener(e -> {
-            int respuesta = JOptionPane.showConfirmDialog(this,
-                "¿Está seguro que desea salir del sistema?",
-                "Confirmar Salida",
-                JOptionPane.YES_NO_OPTION);
-            if (respuesta == JOptionPane.YES_OPTION) {
-                System.exit(0);
-            }
-        });
+        itemSalir.addActionListener(e -> cerrarAplicacion());
         
         menuArchivo.add(itemNuevo);
         menuArchivo.add(itemCargar);
@@ -358,5 +358,29 @@ public class MainFrame extends JFrame {
     
     public ResultadosPanel getResultadosPanel() {
         return resultadosPanel;
+    }
+    
+    /**
+     * Cerrar aplicación con persistencia de datos
+     */
+    private void cerrarAplicacion() {
+        int respuesta = JOptionPane.showConfirmDialog(this,
+            "¿Está seguro que desea salir del sistema?\n\n" +
+            "Los datos se guardarán automáticamente.",
+            "Confirmar Salida",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE);
+            
+        if (respuesta == JOptionPane.YES_OPTION) {
+            // Forzar cierre con persistencia
+            try {
+                util.DatabaseConnection.cerrarConexion();
+                System.out.println("✅ Aplicación cerrada correctamente");
+            } catch (Exception e) {
+                System.err.println("⚠️ Error cerrando la base de datos: " + e.getMessage());
+            }
+            
+            System.exit(0);
+        }
     }
 }

@@ -56,6 +56,11 @@ public class EventBus {
         postulanteListeners.forEach(listener -> listener.accept(event));
     }
     
+    public void notificarPostulante(String tipo, Object data) {
+        PostulanteEvent event = new PostulanteEvent(tipo);
+        postulanteListeners.forEach(listener -> listener.accept(event));
+    }
+    
     // Clases de eventos
     public static class CarreraEvent {
         private String tipo;

@@ -11,8 +11,8 @@ import java.sql.Statement;
  */
 public class DatabaseConnection {
     
-    // Configuración de H2 Database con persistencia completa
-    private static final String DB_URL = "jdbc:h2:./data/sistemaadmision;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;CACHE_SIZE=65536";
+    // Configuración de H2 Database con persistencia completa y máxima durabilidad
+    private static final String DB_URL = "jdbc:h2:./data/sistemaadmision;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1;CACHE_SIZE=65536;WRITE_DELAY=0;UNDO_LOG=1";
     private static final String DB_USER = "sa";
     private static final String DB_PASSWORD = "";
     
@@ -63,6 +63,26 @@ public class DatabaseConnection {
         try {
             Statement stmt = connection.createStatement();
             
+            // Tabla carreras
+            String sqlCarreras = """
+                CREATE TABLE IF NOT EXISTS carreras (
+                    id INTEGER AUTO_INCREMENT PRIMARY KEY,
+                    nombre VARCHAR(200) UNIQUE NOT NULL,
+                    activa BOOLEAN DEFAULT TRUE,
+                    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """;
+            stmt.execute(sqlCarreras);
+            System.out.println("✅ Tabla 'carreras' creada/verificada");
+            
+            // Insertar carreras por defecto si no existen
+            String checkCarreras = "SELECT COUNT(*) FROM carreras";
+            var rs = stmt.executeQuery(checkCarreras);
+            rs.next();
+            if (rs.getInt(1) == 0) {
+                insertarCarrerasPorDefecto(stmt);
+            }
+            
             // Tabla postulantes
             String sqlPostulantes = """
                 CREATE TABLE IF NOT EXISTS postulantes (
@@ -94,18 +114,55 @@ public class DatabaseConnection {
                     nota_co DECIMAL(4,2) DEFAULT 0.00,
                     nota_final DECIMAL(4,2) DEFAULT 0.00,
                     estado_academico VARCHAR(20) DEFAULT 'POSTULANTE',
-                    respuesta VARCHAR(100)
+                    respuesta VARCHAR(100),
+                    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """;
                 
             stmt.execute(sqlPostulantes);
             System.out.println("✅ Tabla 'postulantes' creada/verificada");
             
+            // Forzar commit para asegurar persistencia
+            connection.commit();
+            
             stmt.close();
             
         } catch (SQLException e) {
             System.err.println("❌ Error creando tablas: " + e.getMessage());
+            e.printStackTrace();
         }
+    }
+    
+    /**
+     * Insertar carreras por defecto
+     */
+    private static void insertarCarrerasPorDefecto(Statement stmt) throws SQLException {
+        String[] carrerasPorDefecto = {
+            "INGENIERÍA DE SISTEMAS E INFORMÁTICA",
+            "MEDICINA HUMANA",
+            "INGENIERÍA CIVIL",
+            "ADMINISTRACIÓN",
+            "CONTABILIDAD",
+            "DERECHO Y CIENCIAS POLÍTICAS",
+            "PSICOLOGÍA",
+            "ENFERMERÍA",
+            "INGENIERÍA INDUSTRIAL",
+            "ECONOMÍA",
+            "AGRONOMÍA",
+            "INGENIERÍA FORESTAL",
+            "ZOOTECNIA",
+            "MEDICINA VETERINARIA"
+        };
+        
+        for (String carrera : carrerasPorDefecto) {
+            String sql = "INSERT INTO carreras (nombre) VALUES (?)";
+            var pstmt = stmt.getConnection().prepareStatement(sql);
+            pstmt.setString(1, carrera);
+            pstmt.executeUpdate();
+            pstmt.close();
+        }
+        
+        System.out.println("✅ Carreras por defecto insertadas");
     }
     
     /**
@@ -128,13 +185,21 @@ public class DatabaseConnection {
     }
     
     /**
-     * Cerrar conexión
+     * Cerrar conexión con commit forzado
      */
     public static void cerrarConexion() {
         try {
             if (connection != null && !connection.isClosed()) {
+                // Forzar commit antes de cerrar
+                connection.commit();
+                
+                // Ejecutar SHUTDOWN para asegurar persistencia
+                Statement stmt = connection.createStatement();
+                stmt.execute("SHUTDOWN");
+                stmt.close();
+                
                 connection.close();
-                System.out.println("✅ Conexión H2 cerrada");
+                System.out.println("✅ Conexión H2 cerrada con persistencia garantizada");
             }
         } catch (SQLException e) {
             System.err.println("❌ Error cerrando conexión: " + e.getMessage());
