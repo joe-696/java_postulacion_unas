@@ -147,20 +147,34 @@ public class ImportarPanel extends JPanel {
         panel.setBorder(BorderFactory.createTitledBorder("ℹ️ Formato del Archivo"));
         
         String informacion = """
-            📋 FORMATO REQUERIDO (Excel/CSV separado por tabulaciones):
+            📋 FORMATO REQUERIDO - MEJORADO PARA CAMPOS VACÍOS:
             
-            🔹 COLUMNAS ESPERADAS (en este orden):
-            CODIGO | Apellidos y Nombres | OPCION 1 | OPCION 2 | MODALIDAD | DNI | 
-            CODSEDE | INSCRIPCION | UBIGEO PROCEDENCIA | CODCOLEGIO | FECHA EGRESOCOLEGIO |
-            TIPOCOLEGIO | UBIGEO COLEGIO | ESTADO CIVIL | ENCUESTA | INGRESO | INGRESO A |
-            SEXO | NOMBRE COLEGIO | IDIOMA MAT | TELCELULAR | DIRECCION | UBIGEO | FECNAC |
-            NOTAAC | NOTACO | RESPUESTA | TERMINO SEC. | OBSERVACION | USUARIO
+            🔹 CAMPOS MÍNIMOS OBLIGATORIOS:
+            1. CODIGO (obligatorio)
+            2. Apellidos y Nombres (obligatorio)
             
-            🔹 NOTAS IMPORTANTES:
-            • Primera fila debe contener los encabezados
-            • Las fechas en formato DD/MM/YYYY
-            • Los números decimales con punto (.)
-            • El archivo debe estar guardado como .txt o .csv con separación por tabulaciones
+            🔹 CAMPOS OPCIONALES (pueden estar vacíos):
+            3. OPCION 1 (carrera preferida)
+            4. OPCION 2 (segunda opción)
+            5. MODALIDAD (por defecto: ORDINARIO)
+            6. DNI (se genera automático si está vacío)
+            7. SEXO, FECHAS, NOTAS, etc. (todos opcionales)
+            
+            🔹 FORMATOS SOPORTADOS:
+            • Excel (.xlsx, .xls) - se intenta leer directamente
+            • CSV separado por comas (,)
+            • CSV separado por punto y coma (;)
+            • TXT separado por tabulaciones
+            
+            🔹 CAMPOS VACÍOS - NO HAY PROBLEMA:
+            ✅ El sistema maneja automáticamente campos en blanco
+            ✅ Asigna valores por defecto inteligentes
+            ✅ Solo requiere CÓDIGO y NOMBRE mínimo
+            
+            🔹 CONSEJOS PARA EXCEL:
+            • Si no importa bien, guarde como CSV y vuelva a intentar
+            • Asegúrese que la primera fila tenga encabezados
+            • No importa el orden exacto de las columnas
             """;
         
         JTextArea txtInfo = new JTextArea(informacion);
@@ -282,36 +296,84 @@ public class ImportarPanel extends JPanel {
     
     private void procesarPostulantesImportados(List<Postulante> postulantes) {
         if (postulantes.isEmpty()) {
-            txtAreaResultado.append("⚠️ No se importaron postulantes. Verifique el formato del archivo.\n");
+            txtAreaResultado.append("⚠️ No se importaron postulantes.\n\n");
+            txtAreaResultado.append("🔧 POSIBLES SOLUCIONES:\n");
+            txtAreaResultado.append("• Verifique que el archivo tenga datos válidos\n");
+            txtAreaResultado.append("• Asegúrese que las columnas CÓDIGO y NOMBRES tengan valores\n");
+            txtAreaResultado.append("• Si es Excel, guarde como CSV y vuelva a intentar\n");
+            txtAreaResultado.append("• Verifique que los separadores sean correctos (coma, punto y coma, o tab)\n");
             return;
         }
         
         txtAreaResultado.append("📊 RESUMEN DE IMPORTACIÓN:\n");
         txtAreaResultado.append("========================\n");
-        txtAreaResultado.append("✅ Postulantes leídos: " + postulantes.size() + "\n");
+        txtAreaResultado.append("✅ Postulantes procesados: " + postulantes.size() + "\n");
+        
+        // Analizar calidad de datos importados
+        long conDni = postulantes.stream().filter(p -> !p.getDni().startsWith("TEMP")).count();
+        long conNotas = postulantes.stream().filter(p -> p.getNotaAC() > 0 || p.getNotaCO() > 0).count();
+        long conCarrera = postulantes.stream().filter(p -> !p.getOpcion1().equals("SIN ESPECIFICAR")).count();
+        
+        txtAreaResultado.append("📋 Con DNI real: " + conDni + " (" + (conDni * 100 / postulantes.size()) + "%)\n");
+        txtAreaResultado.append("📝 Con notas: " + conNotas + " (" + (conNotas * 100 / postulantes.size()) + "%)\n");
+        txtAreaResultado.append("🎓 Con carrera especificada: " + conCarrera + " (" + (conCarrera * 100 / postulantes.size()) + "%)\n\n");
         
         // Guardar en base de datos
         int guardados = 0;
+        int errores = 0;
         for (Postulante p : postulantes) {
             if (postulanteDAO.guardar(p)) {
                 guardados++;
+            } else {
+                errores++;
             }
         }
         
-        txtAreaResultado.append("💾 Postulantes guardados en BD: " + guardados + "\n");
-        txtAreaResultado.append("❌ Errores: " + (postulantes.size() - guardados) + "\n\n");
+        txtAreaResultado.append("💾 GUARDADO EN BASE DE DATOS:\n");
+        txtAreaResultado.append("✅ Guardados exitosamente: " + guardados + "\n");
+        txtAreaResultado.append("❌ Errores de guardado: " + errores + "\n\n");
         
-        // Estadísticas por carrera
-        txtAreaResultado.append("📈 ESTADÍSTICAS POR CARRERA:\n");
+        // Estadísticas por carrera (solo las más populares)
+        txtAreaResultado.append("📈 TOP 5 CARRERAS MÁS DEMANDADAS:\n");
         postulantes.stream()
-            .filter(p -> p.getOpcion1() != null && !p.getOpcion1().isEmpty())
+            .filter(p -> p.getOpcion1() != null && !p.getOpcion1().equals("SIN ESPECIFICAR"))
             .collect(java.util.stream.Collectors.groupingBy(
                 Postulante::getOpcion1,
                 java.util.stream.Collectors.counting()))
-            .forEach((carrera, cantidad) -> 
-                txtAreaResultado.append("   • " + carrera + ": " + cantidad + " postulantes\n"));
+            .entrySet().stream()
+            .sorted(java.util.Map.Entry.<String, Long>comparingByValue().reversed())
+            .limit(5)
+            .forEach(entry -> 
+                txtAreaResultado.append("   " + (entry.getValue() < 10 ? " " : "") + 
+                    entry.getValue() + "│ " + entry.getKey() + "\n"));
         
-        txtAreaResultado.append("\n🎉 ¡Importación completada exitosamente!");
+        // Estadísticas por modalidad
+        txtAreaResultado.append("\n📊 DISTRIBUCIÓN POR MODALIDAD:\n");
+        postulantes.stream()
+            .collect(java.util.stream.Collectors.groupingBy(
+                Postulante::getModalidad,
+                java.util.stream.Collectors.counting()))
+            .forEach((modalidad, cantidad) -> 
+                txtAreaResultado.append("   • " + modalidad + ": " + cantidad + " postulantes\n"));
+        
+        // Resumen de notas
+        if (conNotas > 0) {
+            double promedioAC = postulantes.stream()
+                .filter(p -> p.getNotaAC() > 0)
+                .mapToDouble(Postulante::getNotaAC)
+                .average().orElse(0);
+            double promedioCO = postulantes.stream()
+                .filter(p -> p.getNotaCO() > 0)
+                .mapToDouble(Postulante::getNotaCO)
+                .average().orElse(0);
+                
+            txtAreaResultado.append(String.format("\n📊 PROMEDIOS DE NOTAS:\n"));
+            txtAreaResultado.append(String.format("   • Aptitud Académica: %.2f\n", promedioAC));
+            txtAreaResultado.append(String.format("   • Conocimientos: %.2f\n", promedioCO));
+        }
+        
+        txtAreaResultado.append("\n🎉 ¡Importación completada exitosamente!\n");
+        txtAreaResultado.append("💡 Los campos vacíos fueron rellenados automáticamente con valores por defecto.\n");
         
         // Notificar evento
         EventBus.getInstance().publicarPostulantesImportados(guardados);
