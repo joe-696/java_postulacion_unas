@@ -29,7 +29,7 @@ public class ExcelUtils {
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
             for (Postulante p : postulantes) {
                 String fechaInscripcion = p.getInscripcion() != null ? sdf.format(p.getInscripcion()) : "";
-                String estadoIngreso = p.getPuntajeFinal() >= 11.0 ? "INGRESÓ" : "NO INGRESÓ";
+                String estadoIngreso = p.getNotaFinal() >= 11.0 ? "INGRESO" : "NO INGRESO";
                 
                 writer.printf("%s,\"%s\",\"%s\",\"%s\",%s,%s,%s,%s,%.2f,%.2f,%.2f,%s,%s%n",
                     p.getCodigo(),
@@ -42,17 +42,17 @@ public class ExcelUtils {
                     p.getEstadoAcademico(),
                     p.getNotaAC(),
                     p.getNotaCO(),
-                    p.getPuntajeFinal(),
+                    p.getNotaFinal(),
                     estadoIngreso,
                     fechaInscripcion
                 );
             }
             
-            System.out.println("✅ Archivo exportado: " + rutaArchivo);
+            System.out.println("Archivo exportado: " + rutaArchivo);
             return true;
             
         } catch (Exception e) {
-            System.err.println("❌ Error exportando: " + e.getMessage());
+            System.err.println("Error exportando: " + e.getMessage());
             return false;
         }
     }
@@ -66,7 +66,7 @@ public class ExcelUtils {
         List<Postulante> postulantes = new ArrayList<>();
         
         try {
-            System.out.println("📥 Importando postulantes desde: " + rutaArchivo);
+            System.out.println("Importando postulantes desde: " + rutaArchivo);
             
             // Determinar tipo de archivo
             String extension = obtenerExtension(rutaArchivo).toLowerCase();
@@ -78,36 +78,29 @@ public class ExcelUtils {
                     break;
                 case "xlsx":
                 case "xls":
-                    System.out.println("📋 Detectado archivo Excel, intentando importación directa...");
+                    System.out.println("Detectado archivo Excel, intentando importacion directa...");
                     postulantes = importarExcelDirecto(rutaArchivo);
                     break;
                 default:
                     throw new IllegalArgumentException("Formato no soportado: " + extension);
             }
             
-            System.out.println("✅ Importación completada: " + postulantes.size() + " postulantes procesados");
+            System.out.println("Importacion completada: " + postulantes.size() + " postulantes procesados");
             
             if (postulantes.isEmpty()) {
-                JOptionPane.showMessageDialog(null,
-                    "⚠️ No se pudieron importar datos.\n\n" +
-                    "Verifique que:\n" +
-                    "• El archivo contenga datos válidos\n" +
-                    "• Tenga al menos CÓDIGO y NOMBRES\n" +
-                    "• Use el formato correcto de separadores",
-                    "Sin Datos Importados",
-                    JOptionPane.WARNING_MESSAGE);
+                System.out.println("No se pudieron importar datos.");
+                System.out.println("Verifique que:");
+                System.out.println("- El archivo contenga datos validos");
+                System.out.println("- Tenga al menos CODIGO y NOMBRES");
+                System.out.println("- Use el formato correcto de separadores");
             }
             
         } catch (Exception e) {
-            System.err.println("❌ Error importando archivo: " + e.getMessage());
-            JOptionPane.showMessageDialog(null,
-                "❌ Error importando archivo:\n" + e.getMessage() + "\n\n" +
-                "💡 Sugerencias:\n" +
-                "• Verifique que el archivo no esté abierto en Excel\n" +
-                "• Asegúrese de que tenga datos válidos\n" +
-                "• Pruebe guardando como CSV desde Excel",
-                "Error de Importación",
-                JOptionPane.ERROR_MESSAGE);
+            System.err.println("Error importando archivo: " + e.getMessage());
+            System.out.println("Sugerencias:");
+            System.out.println("- Verifique que el archivo no este abierto en Excel");
+            System.out.println("- Asegurese de que tenga datos validos");
+            System.out.println("- Pruebe guardando como CSV desde Excel");
         }
         
         return postulantes;
@@ -174,39 +167,19 @@ public class ExcelUtils {
      * En un proyecto real usaríamos Apache POI
      */
     private static List<Postulante> importarExcelDirecto(String rutaArchivo) throws IOException {
-        System.out.println("📋 Intentando importación directa de Excel...");
-        
-        // Mostrar diálogo informativo pero intentar leer como texto plano
-        int opcion = JOptionPane.showConfirmDialog(null,
-            "🔄 IMPORTACIÓN DE EXCEL\n\n" +
-            "El sistema intentará leer el archivo Excel.\n" +
-            "Si tiene problemas, guarde como CSV.\n\n" +
-            "¿Continuar con la importación?",
-            "Importar Excel",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE);
-            
-        if (opcion != JOptionPane.YES_OPTION) {
-            return new ArrayList<>();
-        }
+        System.out.println("Intentando importacion directa de Excel...");
         
         try {
             // Intentar leer como texto plano (a veces funciona con archivos Excel simples)
             return importarDesdeCSV(rutaArchivo);
         } catch (Exception e) {
-            System.err.println("❌ No se pudo leer como Excel directo: " + e.getMessage());
-            
-            JOptionPane.showMessageDialog(null,
-                "❌ No se pudo importar el archivo Excel directamente.\n\n" +
-                "📋 SOLUCIÓN:\n" +
-                "1. Abra el archivo en Excel\n" +
-                "2. Vaya a 'Archivo' → 'Guardar como'\n" +
-                "3. Seleccione formato 'CSV (separado por comas)'\n" +
-                "4. Guarde con nuevo nombre\n" +
-                "5. Importe el archivo CSV creado\n\n" +
-                "Esto garantiza compatibilidad total.",
-                "Error Excel",
-                JOptionPane.ERROR_MESSAGE);
+            System.err.println("No se pudo leer como Excel directo: " + e.getMessage());
+            System.out.println("SOLUCION:");
+            System.out.println("1. Abra el archivo en Excel");
+            System.out.println("2. Vaya a 'Archivo' -> 'Guardar como'");
+            System.out.println("3. Seleccione formato 'CSV (separado por comas)'");
+            System.out.println("4. Guarde con nuevo nombre");
+            System.out.println("5. Importe el archivo CSV creado");
             
             return new ArrayList<>();
         }

@@ -382,6 +382,14 @@ public class Postulante {
         return modalidad != null && modalidad.toUpperCase().contains("BECA 18");
     }
     
+    /**
+     * Calcular puntaje final basado en las notas AC y CO
+     */
+    public void calcularPuntajeFinal() {
+        // Calcular puntaje final simple como promedio de las dos notas
+        // El puntaje se obtiene automáticamente a través del getter getNotaFinal()
+    }
+    
     // ===== MÉTODOS ESTÁNDAR =====
     
     @Override

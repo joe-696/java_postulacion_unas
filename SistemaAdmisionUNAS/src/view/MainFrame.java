@@ -188,9 +188,9 @@ public class MainFrame extends JFrame {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeel());
             SwingUtilities.updateComponentTreeUI(this);
-            System.out.println("✅ Look and Feel configurado exitosamente");
+            System.out.println("Look and Feel configurado exitosamente");
         } catch (Exception e) {
-            System.out.println("⚠️ Usando Look and Feel por defecto: " + e.getMessage());
+            System.out.println("Usando Look and Feel por defecto: " + e.getMessage());
         }
     }
     
