@@ -1,6 +1,6 @@
-package main;    public static void main(String[] args) {
-        System.out.println("🎓 SISTEMA COMPLETO DE ADMISIÓN UNAS");
-        System.out.println("====================================");import model.Postulante;
+package main;
+
+import model.Postulante;
 import util.ExcelUtils;
 import util.AlgoritmoAdmision;
 import java.util.List;
@@ -13,8 +13,8 @@ import java.util.List;
 public class TestSistemaCompleto {
     
     public static void main(String[] args) {
-        System.out.println("🎓 SISTEMA COMPLETO DE ADMISIÓN UNHEVAL");
-        System.out.println("======================================");
+        System.out.println("🎓 SISTEMA COMPLETO DE ADMISIÓN UNAS");
+        System.out.println("====================================");
         
         // PASO 1: Importar/Generar datos de postulantes
         System.out.println("\n🔄 PASO 1: Generando datos de postulantes...");

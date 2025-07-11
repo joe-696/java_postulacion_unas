@@ -12,11 +12,7 @@ public class MainFrame extends JFrame {
     
     private JTabbedPane tabbedPane;
     private InscripcionPanel inscripcionPanel;
-    private Re    private void mostrarMensajeBienvenida() {
-        String mensaje = """
-            🎉 ¡Bienvenido al Sistema de Admisión UNAS!
-            
-            ✅ Sistema iniciado correctamenteoPanel registroPanel;
+    private RegistroPanel registroPanel;
     private ResultadosPanel resultadosPanel;
     
     public MainFrame() {
@@ -336,7 +332,7 @@ public class MainFrame extends JFrame {
     
     private void mostrarMensajeBienvenida() {
         String mensaje = """
-            🎉 ¡Bienvenido al Sistema de Admisión UNHEVAL!
+            🎉 ¡Bienvenido al Sistema de Admisión UNAS!
             
             ✅ Sistema iniciado correctamente
             ✅ Base de datos H2 conectada
