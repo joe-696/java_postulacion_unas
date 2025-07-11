@@ -636,7 +636,7 @@ public class RegistroPanel extends JPanel {
                 
                 for (Postulante postulante : postulantesImportados) {
                     try {
-                        if (postulanteDAO.crear(postulante)) {
+                        if (postulanteDAO.guardar(postulante)) {
                             exitosos++;
                         } else {
                             errores++;
